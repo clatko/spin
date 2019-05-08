@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -286,6 +287,24 @@ func (m *GatewayClient) initializeClient() (*http.Client, error) {
 			UserName: auth.Basic.Username,
 			Password: auth.Basic.Password,
 		})
+		return &client, nil
+	} else if auth != nil && auth.Enabled && auth.Cookie != nil {
+		Cookie := auth.Cookie
+		if !Cookie.IsValid() {
+			return nil, errors.New("Incorrect Cookie configuration. Must include url and sessionId.")
+		}
+
+		cookieUrl, _ := url.Parse(Cookie.URL)
+		var cookies []*http.Cookie
+		cookie := &http.Cookie{
+			Name: "SESSION",
+			Value: Cookie.SessionId,
+			Path: "/",
+			Domain: ".bmasked.info",
+		}
+		cookies = append(cookies, cookie)
+		cookieJar.SetCookies(cookieUrl, cookies)
+
 		return &client, nil
 	} else {
 		return &client, nil
