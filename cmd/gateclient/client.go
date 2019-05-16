@@ -139,11 +139,18 @@ func NewGateClient(flags *pflag.FlagSet) (*GatewayClient, error) {
 		return nil, err
 	}
 
+	debugFlag, err := flags.GetBool("debug")
+	if err != nil {
+		fmt.Println("cannot get debug flag: ", err)
+		debugFlag = false
+	}
+
 	cfg := &gate.Configuration{
 		BasePath:      gateClient.GateEndpoint(),
 		DefaultHeader: make(map[string]string),
 		UserAgent:     fmt.Sprintf("%s/%s", version.UserAgent, version.String()),
 		HTTPClient:    httpClient,
+		Debug:         debugFlag,
 	}
 	gateClient.APIClient = gate.NewAPIClient(cfg)
 	return gateClient, nil

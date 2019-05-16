@@ -212,18 +212,45 @@ func parameterToString(obj interface{}, collectionFormat string) string {
 	return fmt.Sprintf("%v", obj)
 }
 
-// callAPI do the request. 
+// callAPI do the request.
 func (c *APIClient) callAPI(request *http.Request) (*http.Response, error) {
-	 return c.cfg.HTTPClient.Do(request)
+	if c.cfg.Debug {
+		requestDump, requestDumpErr := httputil.DumpRequest(request, true)
+		if requestDumpErr != nil {
+			fmt.Println(requestDumpErr)
+			os.Exit(1)
+		}
+
+		fmt.Println("===Request===")
+		fmt.Println(string(requestDump))
+		fmt.Println("=============")
+
+		// execute request
+		resp, err := c.cfg.HTTPClient.Do(request)
+		responseDump, responseDumpErr := httputil.DumpResponse(resp, true)
+
+		if responseDumpErr != nil {
+			fmt.Println(responseDumpErr)
+		} else {
+			fmt.Println("===Response===")
+			fmt.Println(string(responseDump))
+			fmt.Println("=============")
+		}
+
+		return resp, err
+
+	} else {
+		return c.cfg.HTTPClient.Do(request)
+	}
 }
 
 // Change base path to allow switching to mocks
-func (c *APIClient) ChangeBasePath (path string) {
+func (c *APIClient) ChangeBasePath(path string) {
 	c.cfg.BasePath = path
 }
 
 // prepareRequest build the request
-func (c *APIClient) prepareRequest (
+func (c *APIClient) prepareRequest(
 	ctx context.Context,
 	path string, method string,
 	postBody interface{},
