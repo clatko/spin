@@ -150,6 +150,7 @@ func NewGateClient(flags *pflag.FlagSet) (*GatewayClient, error) {
 		DefaultHeader: make(map[string]string),
 		UserAgent:     fmt.Sprintf("%s/%s", version.UserAgent, version.String()),
 		HTTPClient:    httpClient,
+		CliConfig:     gateClient.Config,
 		Debug:         debugFlag,
 	}
 	gateClient.APIClient = gate.NewAPIClient(cfg)
@@ -304,13 +305,30 @@ func (m *GatewayClient) initializeClient() (*http.Client, error) {
 		cookieUrl, _ := url.Parse(Cookie.URL)
 		var cookies []*http.Cookie
 		cookie := &http.Cookie{
-			Name: "SESSION",
-			Value: Cookie.SessionId,
-			Path: "/",
+			Name:   "SESSION",
+			Value:  Cookie.SessionId,
+			Path:   "/",
 			Domain: ".bmasked.info",
 		}
 		cookies = append(cookies, cookie)
 		cookieJar.SetCookies(cookieUrl, cookies)
+
+		return &client, nil
+	} else if auth != nil && auth.Enabled && auth.Saml != nil && auth.Saml.IsValid() {
+		// load cookies from file
+		util.CookiesFile = filepath.Join(filepath.Dir(m.configLocation), ".cookies")
+		cookiesMap, err := util.CookiesLoad()
+
+		if err == nil {
+			for cookiesUrl, cookies := range cookiesMap {
+				url, err := url.Parse(cookiesUrl)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					cookieJar.SetCookies(url, cookies)
+				}
+			}
+		}
 
 		return &client, nil
 	} else {

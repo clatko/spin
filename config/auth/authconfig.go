@@ -20,6 +20,7 @@ import (
 	gsa "github.com/spinnaker/spin/config/auth/googleserviceaccount"
 	config "github.com/spinnaker/spin/config/auth/iap"
 	"github.com/spinnaker/spin/config/auth/oauth2"
+	"github.com/spinnaker/spin/config/auth/saml"
 	"github.com/spinnaker/spin/config/auth/x509"
 )
 
@@ -31,6 +32,7 @@ type AuthConfig struct {
 	Basic   *basic.BasicConfig   `yaml:"basic,omitempty"`
 	Iap     *config.IapConfig    `yaml:"iap,omitempty"`
 	Cookie  *cookie.CookieConfig  `yaml:"cookie,omitempty"`
+	Saml    *saml.SamlConfig     `yaml:"saml,omitempty"`
 
 	GoogleServiceAccount *gsa.GoogleServiceAccountConfig `yaml:"google_service_account,omitempty"`
 }

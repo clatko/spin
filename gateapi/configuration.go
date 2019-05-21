@@ -10,6 +10,7 @@
 package swagger
 
 import (
+	cli "github.com/spinnaker/spin/config"
 	"net/http"
 )
 
@@ -56,6 +57,7 @@ type Configuration struct {
 	DefaultHeader map[string]string `json:"defaultHeader,omitempty"`
 	UserAgent     string            `json:"userAgent,omitempty"`
 	HTTPClient    *http.Client
+	CliConfig     cli.Config
 	Debug         bool
 }
 
@@ -64,6 +66,7 @@ func NewConfiguration() *Configuration {
 		BasePath:      "https://localhost",
 		DefaultHeader: make(map[string]string),
 		UserAgent:     "Swagger-Codegen/1.0.0/go",
+		Debug:         false,
 	}
 	return cfg
 }
