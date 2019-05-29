@@ -247,7 +247,7 @@ func (c *APIClient) callAPI(request *http.Request) (*http.Response, error) {
 		}
 	}
 
-	return c.authBypass(request, resp), err
+	return c.authBypass(request, resp, err)
 }
 
 func (c *APIClient) callSAMLAuth(request *http.Request) (*http.Response, error) {
@@ -276,13 +276,13 @@ func (c *APIClient) callSAMLAuth(request *http.Request) (*http.Response, error) 
 	return resp, err
 }
 
-func (c *APIClient) authBypass(request *http.Request, response *http.Response) *http.Response {
+func (c *APIClient) authBypass(request *http.Request, response *http.Response, response_error error) (*http.Response, error) {
 	// return response if no auth needed
 	auth := c.cfg.CliConfig.Auth
 	if auth != nil && auth.Enabled && auth.Saml != nil && auth.Saml.IsValid() {
 
 		if response.Header.Get("X-Spinnaker-Request-Id") != "" {
-			return response
+			return response, response_error
 		}
 
 		// clear cookies cache
@@ -301,7 +301,7 @@ func (c *APIClient) authBypass(request *http.Request, response *http.Response) *
 		}
 
 		if authUrl == "" || samlRequest == "" {
-			return response
+			return response, response_error
 		}
 
 		// redirect to keycloak
@@ -351,6 +351,19 @@ func (c *APIClient) authBypass(request *http.Request, response *http.Response) *
 			fmt.Println("Saml response: ", samlResponse)
 		}
 
+		// Set client cookie
+		cookiesMap, err := util.CookiesLoad()
+		if err == nil {
+			for cookiesUrl, cookies := range cookiesMap {
+				url, err := url.Parse(cookiesUrl)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					c.cfg.HTTPClient.Jar.SetCookies(url, cookies)
+				}
+			}
+		}
+
 		// Authenticate back to Spinnaker with SAML Response
 		form = url.Values{}
 		form.Add("SAMLResponse", samlResponse)
@@ -361,10 +374,12 @@ func (c *APIClient) authBypass(request *http.Request, response *http.Response) *
 
 		resp, _ = c.callSAMLAuth(r)
 
-		return resp
+		// Rerun initial request
+		response, response_error = c.callSAMLAuth(request)
+		return response, response_error
 	}
 
-	return response
+	return response, response_error
 }
 
 func authGetRedirectInfo(response *http.Response) (string, string) {
